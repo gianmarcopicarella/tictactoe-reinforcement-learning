@@ -1,0 +1,6 @@
+[submodule "src/external/cereal"]
+	path = src/external/cereal
+	url = https://github.com/USCiLab/cereal.git
+[submodule "src/external/cli11"]
+	path = src/external/cli11
+	url = https://github.com/CLIUtils/CLI11.git
