@@ -17,13 +17,13 @@ namespace TTT
         static std::random_device dev;
         static std::mt19937 rng(dev());
 
-        auto nextMoves = TTT::Utils::GenerateMoves(myId, aCurrentState);
+        const auto nextMoves = TTT::Utils::GenerateMoves(myId, aCurrentState);
 
         assert(nextMoves.size() > 0);
 
-        std::uniform_real_distribution<> uniFltDistr(0.f, 1.f);
+        std::uniform_real_distribution<> floatDistribution(0.f, 1.f);
 
-        if (uniFltDistr(rng) < myRandomEpsilon)
+        if (floatDistribution(rng) < myRandomEpsilon)
         {
             std::uniform_int_distribution<> uniIntDistr(0, nextMoves.size() - 1);
             return nextMoves[uniIntDistr(rng)];
@@ -32,26 +32,26 @@ namespace TTT
         {
             const auto nextPlayer = static_cast<Player>((~static_cast<uint32_t>(myId)) & 0x3);
 
-            std::vector<std::pair<uint32_t, int>> nextMovesScores;
+            std::vector<std::pair<int, uint32_t>> nextMovesScores;
+            nextMovesScores.reserve(nextMoves.size());
 
             for (const auto nextMove : nextMoves)
             {
-                nextMovesScores.push_back(std::make_pair(nextMove, TicTacToeMinimax(nextMove, nextPlayer)));
+                nextMovesScores.emplace_back(TicTacToeMinimax(nextMove, nextPlayer), nextMove);
             }
 
-            std::sort(nextMovesScores.begin(), nextMovesScores.end(), [](auto& p1, auto& p2) {
-                return p1.second > p2.second;
-            });
+            std::sort(nextMovesScores.begin(), nextMovesScores.end(), std::greater<>());
 
             const auto equalMinMovesCount = std::count_if(nextMovesScores.begin(), nextMovesScores.end(), [&](const auto& p) {
-                return nextMovesScores[0].second == p.second;
+                return nextMovesScores[0].first == p.first;
             });
 
-            std::uniform_int_distribution<> uniIntDistr(0, equalMinMovesCount - 1);
+            std::uniform_int_distribution<> intDistribution(0, equalMinMovesCount - 1);
 
-            return nextMovesScores[uniIntDistr(rng)].first;
+            return nextMovesScores[intDistribution(rng)].second;
         }
     }
+
     int EpsilonOptimalOpponent::TicTacToeMinimax(const uint32_t aBoard, const Player aPlayer)
     {
         switch (TTT::Utils::GetBoardStatus(myId, aBoard))

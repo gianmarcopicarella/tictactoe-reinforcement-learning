@@ -5,7 +5,7 @@
 #ifndef RLEXPERIMENTS_RANDOMOPPONENT_H
 #define RLEXPERIMENTS_RANDOMOPPONENT_H
 
-#include "Agent.h"
+#include <Agent.h>
 #include <cstdint>
 
 #include "PlayerEnum.h"
@@ -13,10 +13,10 @@
 
 namespace TTT
 {
-    class RandomOpponent : public rl::Agent<Player, uint32_t, uint32_t>
+    class RandomOpponent : public RL::Agent<Player, uint32_t, uint32_t>
     {
     public:
-        using Base = rl::Agent<Player, uint32_t, uint32_t>;
+        using Base = RL::Agent<Player, uint32_t, uint32_t>;
 
         RandomOpponent(const Player& aTrainerId) : Base(aTrainerId) {}
 

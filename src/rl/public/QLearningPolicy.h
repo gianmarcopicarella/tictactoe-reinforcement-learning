@@ -7,7 +7,7 @@
 
 #include "GreedyLearner.h"
 
-namespace rl
+namespace RL
 {
     template<typename AgentId, typename State, typename Action, typename LearningSettings, typename ActionStatus>
     class QLearnerPolicy : public GreedyLearner<AgentId, State, Action, LearningSettings, ActionStatus> {
@@ -15,10 +15,14 @@ namespace rl
     public:
         using Base = GreedyLearner<AgentId, State, Action, LearningSettings, ActionStatus>;
 
+        QLearnerPolicy() = delete;
+
         QLearnerPolicy(const AgentId &anAgentId, const LearningSettings &aLearningSettings) :
             Base(anAgentId, aLearningSettings) {}
 
-    void Update(const std::vector <State> &aGameplayHistory)
+        virtual ~QLearnerPolicy() {}
+
+        void Update(const std::vector <State> &aGameplayHistory)
     {
         ActionStatus lastMoveStatus;
         const auto isLastMoveFromAgent = IsAgentLastMove(aGameplayHistory.back(), lastMoveStatus);
@@ -26,7 +30,7 @@ namespace rl
         if (!isLastMoveFromAgent) {
             const auto &agentMove = aGameplayHistory[aGameplayHistory.size() - 2];
 
-            const auto reward = Base::myLearningSettings.myStaticScores[lastMoveStatus]/* myActionValueScores[aGameplayHistory.back()]*/;
+            const auto reward = Base::myLearningSettings.myStaticScores[lastMoveStatus];
 
             Base::myActionValueScores[agentMove] +=
                     Base::myLearningSettings.myLearningRate * (reward - Base::myActionValueScores[agentMove]);

@@ -7,10 +7,12 @@
 
 #include "LearningPolicy.h"
 
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/memory.hpp>
 #include <unordered_map>
 #include <random>
 
-namespace rl {
+namespace RL {
     template<typename AgentId, typename State, typename Action, typename LearningSettings, typename ActionStatus>
     class GreedyLearner : public LearningPolicy<AgentId, State, Action, LearningSettings, ActionStatus> {
     public:
@@ -21,36 +23,50 @@ namespace rl {
         GreedyLearner(const AgentId &anAgentId, const LearningSettings &aLearningSettings) :
                 Base(anAgentId, aLearningSettings) {}
 
+        virtual ~GreedyLearner() {}
+
         Action GetNextAction(const State &aCurrentState) {
             static std::random_device dev;
             static std::mt19937 rng(dev());
 
             Action result;
 
-            if (Base::myLearningSettings.myIsTraining) {
-                std::uniform_real_distribution<> uniFltDistr(0.f, 1.f);
+            if (Base::myLearningSettings.myIsTraining)
+            {
+                std::uniform_real_distribution<> uniFltDistribution(0.f, 1.f);
 
-                if (uniFltDistr(rng) < Base::myLearningSettings.myGreedyEpsilon) {
+                if (uniFltDistribution(rng) < Base::myLearningSettings.myRandomEpsilon)
+                {
                     result = ExplorationJob(aCurrentState);
-                } else {
+                }
+                else
+                {
                     result = GreedyJob(aCurrentState);
                 }
 
-                Base::myLearningSettings.myGreedyEpsilon *= (1.f - Base::myLearningSettings.myGreedyEpsilonDecay);
-            } else {
+                Base::myLearningSettings.myRandomEpsilon *= (1.f - Base::myLearningSettings.myRandomEpsilonDecay);
+            }
+            else
+            {
                 result = GreedyJob(aCurrentState);
             }
 
             return result;
         }
 
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(cereal::base_class<Base>(this),
+                    CEREAL_NVP(myActionValueScores));
+        }
+
     protected:
+        virtual Action ExplorationJob(const State &aCurrentState) const = 0;
+        virtual Action GreedyJob(const State &aCurrentState) const = 0;
+
         using ActionValueScoresMap = std::unordered_map<Action, float>;
         ActionValueScoresMap myActionValueScores;
-
-        virtual Action ExplorationJob(const State &aCurrentState) const = 0;
-
-        virtual Action GreedyJob(const State &aCurrentState) const = 0;
     };
 }
 #endif //RLEXPERIMENTS_GREEDYLEARNER_H

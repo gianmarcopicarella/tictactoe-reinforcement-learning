@@ -16,10 +16,10 @@ namespace TTT
 
         const auto nextMoves = TTT::Utils::GenerateMoves(myId, aCurrentState);
 
-        assert(nextMoves.size() > 0);
+        assert(!nextMoves.empty());
 
-        std::uniform_int_distribution<> uniIntDistr(0, nextMoves.size() - 1);
+        std::uniform_int_distribution<> intDistribution(0, nextMoves.size() - 1);
 
-        return nextMoves[uniIntDistr(rng)];
+        return nextMoves[intDistribution(rng)];
     }
 }

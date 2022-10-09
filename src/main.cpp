@@ -1,167 +1,195 @@
-// TicTacToeRL.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
-#include <vector>
 #include <cstdint>
-#include <random>
 #include <functional>
-
-#include <LearningSettings/QLearningSettings.h>
 
 #include <TicTacToeQLearner.h>
 #include <EpsilonOptimalOpponent.h>
+#include <RandomOpponent.h>
 
 #include <PlayerEnum.h>
 #include <BoardStatusEnum.h>
-#include <RandomOpponent.h>
 #include <GameUtils.h>
 
-template <typename LearningSettings>
-void Simulate(rl::LearningPolicy<TTT::Player, uint32_t, uint32_t, LearningSettings, TTT::BoardStatus>& aLearningAgent,
-              rl::Agent<TTT::Player, uint32_t, uint32_t>& aTrainerAgent,
-              bool aFirstMoveFromLearnerFlag = true,
-              std::function<void(const std::vector<uint32_t>&, int)> onEpisodeEndCallback = nullptr)
+#include <CLI/CLI.hpp>
+
+#include <sstream>
+#include <cereal/archives/json.hpp>
+
+int main(int argc, char **argv)
 {
-    static std::random_device dev;
-    static std::mt19937 rng(dev());
+    constexpr auto appDescription = "A reinforcement learning test applied to TicTacToe";
+    constexpr auto appName = "TicTacToe learner";
 
-    std::vector<uint32_t> gameplayHistory;
+    CLI::App app {appDescription , appName };
 
-    const auto episodesCount = aLearningAgent.GetLearningSettings().myIsTraining ?
-                               aLearningAgent.GetLearningSettings().myTrainEpisodesCount :
-                               aLearningAgent.GetLearningSettings().myTestingEpisodesCount;
+    app.require_subcommand(1);
 
-    for (auto episodeIdx = 0; episodeIdx < episodesCount; ++episodeIdx)
-    {
-        uint32_t board = 0x00000000;
-        TTT::Player player = aFirstMoveFromLearnerFlag ? aLearningAgent.GetAgentId() : aTrainerAgent.GetAgentId();
+    TTT::TicTacToeSettings<TTT::BoardStatus> agentSettings;
 
-        while (TTT::Utils::GetBoardStatus(player, board) == TTT::BoardStatus::Intermediate)
+    agentSettings.myGamma = 0.9f;
+    agentSettings.myRandomEpsilon = 0.3f;
+    agentSettings.myRandomEpsilonDecay = 0.000001f;
+    agentSettings.myLearningRate = 0.5f;
+
+    agentSettings.myStaticScores.insert(std::make_pair(TTT::BoardStatus::Win, 1.f));
+    agentSettings.myStaticScores.insert(std::make_pair(TTT::BoardStatus::Draw, 0.f));
+    agentSettings.myStaticScores.insert(std::make_pair(TTT::BoardStatus::Lose, -1.f));
+    agentSettings.myStaticScores.insert(std::make_pair(TTT::BoardStatus::Intermediate, 0.5f));
+
+    // Common params
+    auto iterationsCount = 50000;
+
+    // Add Train subcommand
+    auto train = app.add_subcommand("train", "Train a policy using QLearning");
+
+    train->add_option("-i", iterationsCount, "Set the number of iterations");
+
+    std::vector<float> rewards;
+    auto rewardsParam = train->add_option("--rewards", rewards, "Set reward values (win, draw, lose, intermediate)");
+
+    rewardsParam->expected(4);
+
+    // Train settings
+    auto gammaParam = train->add_option("-g", agentSettings.myGamma, "Set gamma value");
+    auto epsilonParam = train->add_option("-e", agentSettings.myRandomEpsilon, "Set epsilon value");
+    auto epsilonDecayParam = train->add_option("-d", agentSettings.myRandomEpsilonDecay, "Set epsilon decay value");
+    auto learningRateParam = train->add_option("-r", agentSettings.myLearningRate, "Set learning rate value");
+
+    gammaParam->check(CLI::Range(0.f,1.f));
+    epsilonParam->check(CLI::Range(0.f,1.f));
+    epsilonDecayParam->check(CLI::Range(0.f,1.f));
+    learningRateParam->check(CLI::Range(0.f,1.f));
+
+    auto isAgentNought { false };
+    train->add_flag("--nought", isAgentNought, "Set agent side to nought");
+
+    auto isAgentDelayed { false };
+    train->add_flag("--delay", isAgentDelayed, "Set agent to play after the trainer");
+
+    agentSettings.myIsAgentFirstToMove = !isAgentDelayed;
+
+    std::string savePath;
+    auto savePathParam = train->add_option("-o", savePath, "Set policy save path");
+
+    savePathParam->required();
+    savePathParam->check(CLI::NonexistentPath);
+
+    auto epsilonValue { 0.0f };
+    auto epsilonOptimalParam = train->add_option("--optimal", epsilonValue, "Set the opponent type to epsilon optimal");
+
+    epsilonOptimalParam->check(CLI::Range(0.f,1.f));
+
+    // Add Test subcommand
+    auto test = app.add_subcommand("test", "Test a trained policy against an opponent");
+
+    test->add_option("-i", iterationsCount, "Set the number of iterations");
+
+    std::string loadPath;
+    auto loadPathParam = test->add_option("-l", loadPath, "Set policy load path");
+
+    loadPathParam->required();
+    loadPathParam->check(CLI::ExistingFile);
+
+    auto isEpsilonOptimalOpponent { false };
+    test->add_flag("--optimal", isEpsilonOptimalOpponent, "Set the opponent type to epsilon optimal");
+
+    train->callback([&]() {
+
+        if(!rewardsParam->empty())
         {
-            if (player == aLearningAgent.GetAgentId())
-            {
-                board = aLearningAgent.GetNextAction(board);
-            }
-            else
-            {
-                board = aTrainerAgent.GetNextAction(board);
-            }
-
-            // Add new move
-            gameplayHistory.push_back(board);
-
-            // Swap player
-            player = static_cast<TTT::Player>((~static_cast<uint32_t>(player)) & 0x3);
+            agentSettings.myStaticScores[TTT::BoardStatus::Win] = rewards[0];
+            agentSettings.myStaticScores[TTT::BoardStatus::Draw] = rewards[1];
+            agentSettings.myStaticScores[TTT::BoardStatus::Lose] = rewards[2];
+            agentSettings.myStaticScores[TTT::BoardStatus::Intermediate] = rewards[3];
         }
 
-        if (onEpisodeEndCallback != nullptr)
+        const auto agentSide = isAgentNought ? TTT::Player::Nought : TTT::Player::Cross;
+        const auto opponentSide = isAgentNought ? TTT::Player::Cross : TTT::Player::Nought;
+
+        agentSettings.myIsTraining = true;
+
+        TTT::TicTacToeQLearner learningAgent{ agentSide, agentSettings };
+
+        RL::Agent<TTT::Player, uint32_t, uint32_t> * opponentPtr;
+
+        if(epsilonOptimalParam->empty())
         {
-            onEpisodeEndCallback(gameplayHistory, episodeIdx);
+            opponentPtr = new TTT::RandomOpponent{opponentSide};
+        }
+        else
+        {
+            opponentPtr = new TTT::EpsilonOptimalOpponent{opponentSide, epsilonValue};
         }
 
-        // Update values
+        TTT::Utils::Simulate(
+                static_cast<TTT::TicTacToeQLearner::Base::Base&>(learningAgent),
+                *opponentPtr,
+                iterationsCount,
+                learningAgent.GetLearningSettings().myIsAgentFirstToMove);
 
-        if (aLearningAgent.GetLearningSettings().myIsTraining)
+        learningAgent.SetTrainingMode(false);
+
+        // save agent to disk
+        std::ofstream os(savePath);
+        assert(os.is_open());
+
         {
-            aLearningAgent.Update(gameplayHistory);
+            cereal::JSONOutputArchive archive(os);
+            archive(CEREAL_NVP(learningAgent));
         }
 
-        // Clear history
-        gameplayHistory.clear();
-    }
-}
+        os.close();
 
-int main()
-{
-    rl::QLearningSettings<TTT::BoardStatus> QLSettings;
+        std::cout << "Training done" << std::endl;
+    });
 
-    QLSettings.myGamma = 0.9f;
-    QLSettings.myGreedyEpsilon = 0.3f;
-    QLSettings.myGreedyEpsilonDecay = 0.000001f;
-    QLSettings.myLearningRate = 0.5f;
 
-    QLSettings.myStaticScores.insert(std::make_pair(TTT::BoardStatus::Win, 1.f));
-    QLSettings.myStaticScores.insert(std::make_pair(TTT::BoardStatus::Draw, 0.f));
-    QLSettings.myStaticScores.insert(std::make_pair(TTT::BoardStatus::Lose, -1.f));
-    QLSettings.myStaticScores.insert(std::make_pair(TTT::BoardStatus::Intermediate, 0.5f));
+    test->callback([&]() {
+        // load agent from disk
+        std::ifstream os(loadPath);
 
-    QLSettings.myTrainEpisodesCount = 100000;
-    QLSettings.myTestingEpisodesCount = 100000;
-    QLSettings.myIsTraining = true;
+        assert(os.is_open());
 
-    // Create the learning agent
-    TTT::TicTacToeQLearner learningAgent{ TTT::Player::Cross, QLSettings };
+        cereal::JSONInputArchive archive(os);
 
-    // Create the random opponent
-    TTT::RandomOpponent randomOpponent{ TTT::Player::Nought };
+        TTT::TicTacToeQLearner trainedAgent;
 
-    // Create the mixed random-optimal opponent with custom probability
-    TTT::EpsilonOptimalOpponent optimalOpponent{ TTT::Player::Nought, 0.3f };
+        archive(trainedAgent);
 
-    // Create a custom episode callback
-    int win = 0, draw = 0, lose = 0;
+        os.close();
 
-    const auto episodeCallback = [&](const std::vector<uint32_t>& aGameplayHistory, int anEpisodeIndex) {
-        switch (TTT::Utils::GetBoardStatus(learningAgent.GetAgentId(), aGameplayHistory.back()))
+        trainedAgent.SetTrainingMode(false);
+
+        RL::Agent<TTT::Player, uint32_t, uint32_t> * opponentPtr;
+
+        const auto opponentSide = trainedAgent.GetAgentId() == TTT::Player::Cross ? TTT::Player::Nought : TTT::Player::Cross;
+
+        if(isEpsilonOptimalOpponent)
         {
-            case TTT::BoardStatus::Win:
-                win += 1;
-                break;;
-            case TTT::BoardStatus::Lose:
-                lose += 1;
-                break;
-            case TTT::BoardStatus::Draw:
-                draw += 1;
-                break;
+            constexpr auto testPhaseEpsilonValue = 0.f;
+            opponentPtr = new TTT::EpsilonOptimalOpponent{opponentSide, testPhaseEpsilonValue};
+        }
+        else
+        {
+            opponentPtr = new TTT::RandomOpponent{opponentSide};
         }
 
-        if (anEpisodeIndex % 20 == 0)
-        {
-            std::cout << "Win: " << win << "  / Draw: " << draw << "  / Lose: " << lose << std::endl;
-        }
-    };
+        TTT::Utils::Simulate(
+                static_cast<TTT::TicTacToeQLearner::Base::Base&>(trainedAgent),
+                *opponentPtr,
+                iterationsCount,
+                trainedAgent.GetLearningSettings().myIsAgentFirstToMove);
 
-    // Training Phase
-    Simulate(
-            static_cast<TTT::TicTacToeQLearner::Base::Base&>(learningAgent),
-            static_cast<TTT::EpsilonOptimalOpponent::Base&>(optimalOpponent),
-            true,
-            episodeCallback);
+        std::cout << "Testing done" << std::endl;
+/*        std::cout << "Win = " <<
+            100*win/static_cast<float>(iterationsCount) <<
+            "% // Draw = " <<
+            100*draw/static_cast<float>(iterationsCount) <<
+            "% // Lose = " <<
+            100*lose/static_cast<float>(iterationsCount) << "%" << std::endl;
+*/
+    });
 
-    // Testing Phase
-    std::cout << "\n!!! TESTING PHASE !!!" << std::endl;
-
-    learningAgent.SetTrainingMode(false);
-
-    // Serialize
-    //learningAgent.SerializeActionValueScoresMap("policy.txt");
-
-    win = 0, draw = 0, lose = 0;
-
-    Simulate(
-            static_cast<TTT::TicTacToeQLearner::Base::Base&>(learningAgent),
-            static_cast<TTT::EpsilonOptimalOpponent::Base&>(optimalOpponent),
-            true,
-            episodeCallback);
-
-    std::cout <<
-              (win / static_cast<float>(QLSettings.myTestingEpisodesCount)) << "% Wins\n" <<
-              (draw / static_cast<float>(QLSettings.myTestingEpisodesCount)) << "% Draws\n" <<
-              (lose / static_cast<float>(QLSettings.myTestingEpisodesCount)) << "% Loses\n\n";
-
-    // Random
-
-    win = 0, draw = 0, lose = 0;
-
-    Simulate(
-            static_cast<TTT::TicTacToeQLearner::Base::Base&>(learningAgent),
-            static_cast<TTT::EpsilonOptimalOpponent::Base&>(randomOpponent),
-            true,
-            episodeCallback);
-
-    std::cout <<
-              (win / static_cast<float>(QLSettings.myTestingEpisodesCount)) << "% Wins\n" <<
-              (draw / static_cast<float>(QLSettings.myTestingEpisodesCount)) << "% Draws\n" <<
-              (lose / static_cast<float>(QLSettings.myTestingEpisodesCount)) << "% Loses\n";
+    // Parse command line params
+    CLI11_PARSE(app, argc, argv);
 }

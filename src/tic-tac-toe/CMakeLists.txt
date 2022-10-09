@@ -1,5 +1,5 @@
-set(TTT_PUBLIC_PATH ${CMAKE_CURRENT_LIST_DIR}/public)
-set(TTT_PRIVATE_PATH ${CMAKE_CURRENT_LIST_DIR}/private)
+set(TTT_PUBLIC_PATH public)
+set(TTT_PRIVATE_PATH private)
 
 file(   GLOB_RECURSE
         TTT_HDR

@@ -5,17 +5,17 @@
 #ifndef RLEXPERIMENTS_EPSILONOPTIMALOPPONENT_H
 #define RLEXPERIMENTS_EPSILONOPTIMALOPPONENT_H
 
-#include "Agent.h"
+#include <Agent.h>
 #include <cstdint>
 
 #include "PlayerEnum.h"
 
 namespace TTT
 {
-class EpsilonOptimalOpponent : public rl::Agent<Player, uint32_t, uint32_t>
+class EpsilonOptimalOpponent : public RL::Agent<Player, uint32_t, uint32_t>
     {
     public:
-        using Base = rl::Agent<Player, uint32_t, uint32_t>;
+        using Base = RL::Agent<Player, uint32_t, uint32_t>;
 
         EpsilonOptimalOpponent(const Player& aTrainerId, float aRandomEpsilon) : Base(aTrainerId), myRandomEpsilon(aRandomEpsilon) {}
 

@@ -9,7 +9,7 @@
 
 namespace TTT
 {
-    TicTacToeQLearner::TicTacToeQLearner(const Player& anAgentId, const rl::QLearningSettings<BoardStatus>& aLearningSettings) :
+    TicTacToeQLearner::TicTacToeQLearner(const Player& anAgentId, const TicTacToeSettings<BoardStatus>& aLearningSettings) :
             Base(anAgentId, aLearningSettings)
     {
         std::set<uint32_t> validBoardStates;

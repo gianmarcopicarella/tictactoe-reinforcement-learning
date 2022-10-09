@@ -5,22 +5,26 @@
 #ifndef RLEXPERIMENTS_TICTACTOEQLEARNER_H
 #define RLEXPERIMENTS_TICTACTOEQLEARNER_H
 
-#include "QLearningPolicy.h"
-#include "LearningSettings/QLearningSettings.h"
+#include <QLearningPolicy.h>
+#include "TicTacToeSettings.h"
 
 #include "PlayerEnum.h"
 #include "BoardStatusEnum.h"
 
 namespace TTT
 {
-class TicTacToeQLearner : public rl::QLearnerPolicy<Player, uint32_t, uint32_t, rl::QLearningSettings<BoardStatus>, BoardStatus>
+    namespace
+    {
+        constexpr auto defaultAgentId = Player::Cross;
+    }
+
+class TicTacToeQLearner : public RL::QLearnerPolicy<Player, uint32_t, uint32_t, TicTacToeSettings<BoardStatus>, BoardStatus>
 {
 public:
-    using Base = rl::QLearnerPolicy<Player, uint32_t, uint32_t, rl::QLearningSettings<BoardStatus>, BoardStatus>;
+    using Base = RL::QLearnerPolicy<Player, uint32_t, uint32_t, TicTacToeSettings<BoardStatus>, BoardStatus>;
 
-    TicTacToeQLearner() = delete;
-
-    TicTacToeQLearner(const Player& anAgentId, const rl::QLearningSettings<BoardStatus>& aLearningSettings);
+    TicTacToeQLearner() : Base(defaultAgentId, TicTacToeSettings<BoardStatus>{}) {}
+    TicTacToeQLearner(const Player& anAgentId, const TicTacToeSettings<BoardStatus>& aLearningSettings);
 
 protected:
     bool IsAgentLastMove(const uint32_t& aLastMove, BoardStatus& anOutMoveStatus) const;

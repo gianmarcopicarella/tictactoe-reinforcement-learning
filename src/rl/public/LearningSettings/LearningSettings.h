@@ -6,17 +6,23 @@
 #define RLEXPERIMENTS_LEARNINGSETTINGS_H
 
 #include <unordered_map>
+#include <cereal/cereal.hpp>
 
-namespace rl {
+namespace RL
+{
     template<typename ActionStatus>
     struct BaseLearningSettings {
-        int myTrainEpisodesCount = 0;
-        int myTestingEpisodesCount = 0;
         float myLearningRate = 0.0f;
         bool myIsTraining = false;
 
         using StaticScoresMap = std::unordered_map<ActionStatus, float>;
         StaticScoresMap myStaticScores;
+
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(myLearningRate), CEREAL_NVP(myIsTraining), CEREAL_NVP(myStaticScores));
+        }
     };
 }
 #endif //RLEXPERIMENTS_LEARNINGSETTINGS_H

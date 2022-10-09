@@ -7,6 +7,29 @@
 namespace TTT {
     namespace Utils {
 
+        namespace
+        {
+            void RecursiveBoardsGeneration(const Player anAgentPlayer, const Player aPlayerToMove, const uint32_t aCurrentBoard, std::set<uint32_t>& someOutValidBoards)
+            {
+                for (const auto& modifiedBoard : GenerateMoves(aPlayerToMove, aCurrentBoard))
+                {
+                    const auto boardStatus = GetBoardStatus(anAgentPlayer, modifiedBoard);
+
+                    if (aPlayerToMove == anAgentPlayer)
+                    {
+                        someOutValidBoards.insert(modifiedBoard);
+                    }
+
+                    if (boardStatus == BoardStatus::Intermediate)
+                    {
+                        const auto nextPlayerToMove = static_cast<Player>((~static_cast<uint32_t>(aPlayerToMove)) & 0x3);
+                        RecursiveBoardsGeneration(anAgentPlayer, nextPlayerToMove, modifiedBoard, someOutValidBoards);
+                    }
+                }
+            }
+        }
+
+
         std::string BoardToString(const uint32_t aBoard)
         {
             static const char symbols[3] = { ' ', 'x', 'o' };
@@ -144,25 +167,6 @@ namespace TTT {
             return moves;
         }
 
-        void RecursiveBoardsGeneration(const Player anAgentPlayer, const Player aPlayerToMove, const uint32_t aCurrentBoard, std::set<uint32_t>& someOutValidBoards)
-        {
-            for (const auto& modifiedBoard : GenerateMoves(aPlayerToMove, aCurrentBoard))
-            {
-                const auto boardStatus = GetBoardStatus(anAgentPlayer, modifiedBoard);
-
-                if (aPlayerToMove == anAgentPlayer)
-                {
-                    someOutValidBoards.insert(modifiedBoard);
-                }
-
-                if (boardStatus == BoardStatus::Intermediate)
-                {
-                    const auto nextPlayerToMove = static_cast<Player>((~static_cast<uint32_t>(aPlayerToMove)) & 0x3);
-                    RecursiveBoardsGeneration(anAgentPlayer, nextPlayerToMove, modifiedBoard, someOutValidBoards);
-                }
-            }
-        }
-
         void GenerateBoards(const Player anAgentPlayer, std::set<uint32_t>& someOutValidBoards)
         {
             constexpr auto startingBoard = 0x00000000;
@@ -188,6 +192,5 @@ namespace TTT {
 
             assert(endgamesCount == 958 && "The number of generated end game boards is not correct");
         }
-
     }
 }

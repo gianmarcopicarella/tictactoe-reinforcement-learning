@@ -15,10 +15,11 @@ add_subdirectory(external/cli11)
 # reinforcement learning base utils
 add_subdirectory(rl)
 
-# tic tac toe experiment
-add_subdirectory(experiments/tic-tac-toe)
+# tic tac toe
+add_subdirectory(tic-tac-toe)
 
 add_executable(RLExperiments main.cpp)
 
 target_link_libraries(RLExperiments PRIVATE RL)
 target_link_libraries(RLExperiments PRIVATE TTT)
+target_link_libraries(RLExperiments PRIVATE CLI11)
