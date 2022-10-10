@@ -45,6 +45,18 @@ tictactoe-rl test --optimal --load ./policy.json
 ### Plotting the cumulative reward function (CRF)
 The CRF plot can be requested only during training through the ```--plotReward``` flag.
 Once the training is completed, a GnuPlot window containing the CRF plot will pop-up.
+
 ### Plotting the cumulative episodes result (CER)
 The CER plot can be requested only during training through the ```--plotResults``` flag.
 Once the training is completed, a GnuPlot window containing the CER plot will pop-up.
+
+
+## Contributing
+
+Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contribution is **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
