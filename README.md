@@ -22,6 +22,20 @@ $ make
 At this point, calling ```$ ./tictactoe-rl train --help``` should print all the available parameteres.
 
 ## Running the application (CLI)
+### Default settings
+```
+  // Go to main.cpp for more details
+  gamma = 0.9;
+  epsilon = 0.3;
+  epsilonDecay = 0.000001;
+  learningRate = 0.5;
+  win, draw, lose, intermediate rewards = 1, 0, -1, 0.5;
+  iterations = 50000;
+  opponent = Random;
+  agentSide = Cross;
+  agentFirstToMove = true;
+```
+
 ### Train and serialize an agent
 When training an agent, ```--save``` is the only mandatory parameter. It specifies where the trained agent should be serialized once the training is completed. 
 ```
