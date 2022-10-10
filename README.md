@@ -15,8 +15,9 @@ There are two opponent types:
 ```
 $ git clone --recurse-submodules https://github.com/gianmarcopicarella/tictactoe-reinforcement-learning.git
 $ cd tictactoe-reinforcement-learning
-$ cmake -S . -B ./build
+$ cmake -S src -B build
 $ cd build
+$ make
 ```
 
 ## Running the application (CLI)
