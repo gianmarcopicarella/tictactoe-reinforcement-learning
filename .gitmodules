@@ -4,9 +4,9 @@
 [submodule "src/external/cli11"]
 	path = src/external/cli11
 	url = https://github.com/CLIUtils/CLI11.git
-[submodule "src/external/sciplot"]
-	path = src/external/sciplot
-	url = https://github.com/sciplot/sciplot
 [submodule "src/external/indicators"]
 	path = src/external/indicators
 	url = https://github.com/p-ranav/indicators.git
+[submodule "src/external/matplotplusplus"]
+	path = src/external/matplotplusplus
+	url = https://github.com/alandefreitas/matplotplusplus/

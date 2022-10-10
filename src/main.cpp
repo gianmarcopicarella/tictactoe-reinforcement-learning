@@ -18,48 +18,31 @@
 
 #include <sstream>
 #include <cereal/archives/json.hpp>
-#include <sciplot/sciplot.hpp>
 
 #include <indicators/cursor_control.hpp>
 #include <indicators/progress_spinner.hpp>
 
-void PlotCumulativeGameResults(const std::unordered_map<TTT::BoardStatus, int>& someResultsCount, int anEpisodesCount)
-{
-    sciplot::Plot2D plot;
+#include <matplot/matplot.h>
 
-    plot.legend().hide();
-    plot.xlabel("Win/Draw/Lose");
-    plot.ylabel("N. Episodes");
-    plot.yrange(0.0f, anEpisodesCount);
-    plot.drawBoxes(std::vector {0, 1, 2}, std::vector {
+void PlotCumulativeGameResults(const std::unordered_map<TTT::BoardStatus, int>& someResultsCount)
+{
+    using namespace matplot;
+    bar(std::vector<int> {
             someResultsCount.find(TTT::BoardStatus::Win)->second,
             someResultsCount.find(TTT::BoardStatus::Draw)->second,
-            someResultsCount.find(TTT::BoardStatus::Lose)->second})
-            .fillSolid()
-            .fillColor("green")
-            .fillIntensity(0.5);
-    plot.boxWidthRelative(0.75);
+            someResultsCount.find(TTT::BoardStatus::Lose)->second});
 
-    sciplot::Figure figure {{plot}};
-    sciplot::Canvas canvas {{figure}};
-
-    canvas.title("Game results distribution");
-    canvas.size(800, 800);
-    canvas.show();
+    gca()->x_axis().ticklabels({"Wins", "Draws", "Loses"});
+    gca()->y_axis().label("N. Episodes");
+    show();
 }
+
 void PlotCumulativeRewardFunction(const std::vector<float>& someCumulativeRewards, int anEpisodesCount)
 {
-    sciplot::Plot2D plot;
-    plot.legend().hide();
-    plot.drawPoints(sciplot::linspace(1, anEpisodesCount, anEpisodesCount), someCumulativeRewards);
-
-    sciplot::Figure figure {{plot}};
-    figure.title("Cumulative reward function");
-
-    sciplot::Canvas canvas {{figure}};
-    canvas.size(800, 800);
-    canvas.title("Cumulative reward function");
-    canvas.show();
+    using namespace matplot;
+    std::vector<double> x = linspace(0, anEpisodesCount, someCumulativeRewards.size());
+    plot(x, someCumulativeRewards);
+    show();
 }
 
 int main(int argc, char **argv)
@@ -242,16 +225,6 @@ int main(int argc, char **argv)
 
         os.close();
 
-        if(rewardPlot)
-        {
-            PlotCumulativeRewardFunction(cumulativeRewards, iterationsCount);
-        }
-
-        if(resultsPlot)
-        {
-            PlotCumulativeGameResults(resultsCounter, iterationsCount);
-        }
-
         spinner.set_option(option::ForegroundColor{Color::green});
         spinner.set_option(option::PrefixText{"✔"});
         spinner.set_option(option::ShowSpinner{false});
@@ -260,6 +233,16 @@ int main(int argc, char **argv)
         spinner.mark_as_completed();
 
         indicators::show_console_cursor(true);
+
+        if(rewardPlot)
+        {
+            PlotCumulativeRewardFunction(cumulativeRewards, iterationsCount);
+        }
+
+        if(resultsPlot)
+        {
+            PlotCumulativeGameResults(resultsCounter);
+        }
     });
 
     test->callback([&]() {
@@ -296,7 +279,7 @@ int main(int argc, char **argv)
             resultsCounter.insert(std::make_pair(TTT::BoardStatus::Lose, 0));
         }
 
-        indicators::ProgressSpinner spinner{
+        indicators::ProgressSpinner spinner {
                 option::PostfixText{"Testing agent"},
                 option::ForegroundColor{Color::yellow},
                 option::SpinnerStates{std::vector<std::string>{"⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁"}},
@@ -320,11 +303,6 @@ int main(int argc, char **argv)
                 trainedAgent.GetLearningSettings().myIsAgentFirstToMove,
                 episodeCallback);
 
-        if(testResultsPlot)
-        {
-            PlotCumulativeGameResults(resultsCounter, iterationsCount);
-        }
-
         spinner.set_option(option::ForegroundColor{Color::green});
         spinner.set_option(option::PrefixText{"✔"});
         spinner.set_option(option::ShowSpinner{false});
@@ -333,6 +311,11 @@ int main(int argc, char **argv)
         spinner.mark_as_completed();
 
         indicators::show_console_cursor(true);
+
+        if(testResultsPlot)
+        {
+            PlotCumulativeGameResults(resultsCounter);
+        }
     });
 
     CLI11_PARSE(cli, argc, argv);

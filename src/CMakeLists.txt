@@ -14,8 +14,8 @@ set(SKIP_PERFORMANCE_COMPARISON ON)
 # external dependencies
 add_subdirectory(external/cereal)
 add_subdirectory(external/cli11)
-add_subdirectory(external/sciplot)
 add_subdirectory(external/indicators)
+add_subdirectory(external/matplotplusplus)
 
 # reinforcement learning base utils
 add_subdirectory(rl)
@@ -27,5 +27,5 @@ add_executable(tictactoe-rl main.cpp)
 
 target_link_libraries(tictactoe-rl PRIVATE TTT)
 target_link_libraries(tictactoe-rl PRIVATE CLI11)
-target_link_libraries(tictactoe-rl PRIVATE sciplot)
 target_link_libraries(tictactoe-rl PRIVATE indicators)
+target_link_libraries(tictactoe-rl PRIVATE matplot)
