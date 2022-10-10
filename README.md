@@ -8,11 +8,19 @@ The current RL class hierarchy makes it easy the addition of new agent or traine
 Currently there is one QLearning agent specialized for Tic-tac-toe in ```TicTacToeQLearner.h```. It accepts a QLearningSettings object containing all the training information needed by the learner.
 
 There are two opponent types:
-1. Random: At each step, it selects a random move sampled using a uniform distribution.
-3. Epsilon-Optimal: At each step, it samples a number n between 0 and 1; if n < epsilon then it returns a random move, otherwise the optimal move is found using the minimax algorithm.
+1. **Random**: At each step, it selects a random move sampled using a uniform distribution.
+3. **Epsilon-Optimal**: At each step, it samples a number n between 0 and 1; if n < epsilon then it returns a random move, otherwise the optimal move is found using the minimax algorithm.
+
+## Getting started
+```
+$ git clone --recurse-submodules https://github.com/gianmarcopicarella/tictactoe-reinforcement-learning.git
+$ cd tictactoe-reinforcement-learning
+$ cmake -S . -B ./build
+$ cd build
+```
 
 ## Running the application (CLI)
-### Training and save an agent
+### Train and serialize an agent
 When training an agent, ```--save``` is the only mandatory parameter. It specifies where the trained agent should be serialized once the training is completed. 
 ```
 $ ./tictactoe-rl train --save ./policy.json
@@ -22,7 +30,7 @@ The trainer selected is random by default. Use ```--optimal eps``` if you want t
 $ ./tictactoe-rl train --optimal 0.2 --save ./policy.json
 ```
 
-### Loading and testing an agent
+### Deserialize and test an agent
 Similar to the training phase, ```--load``` is the only mandatory parameter. It specifies from where the trained agent should be deserialized.
 ```  
 tictactoe-rl test --load ./policy.json
