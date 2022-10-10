@@ -15,9 +15,16 @@ Why using an epsilon optimal opponent? Because in this way the agent is also cap
 
 ## Running the application
 ### Training an agent
-
+Run the following command to train an agent and serialize it on disk
+  tictactoe-rl train -i 20000 --save ./policy.json
+by default the trainer is a random opponent. If you want to use an epsilon-optimal opponent with e=0.2 then use the following command
+  tictactoe-rl train -i 20000 --save ./policy.json --optimal 0.2
 ### Testing an agent
-
+Run the following command to test a trained agent
+  tictactoe-rl test -i 20000 --load ./policy.json
+by default the opponent is a random player. If you want to use an optimal opponent then use the following command
+  tictactoe-rl test -i 20000 --load ./policy.json --optimal
 ### Plotting cumulative reward function
-
-### Plotting Win\Draw\Lose histograms
+The option --plotReward opens a gnuplot window with the cumulative reward function value at each episode
+### Plotting Win/Draw/Lose count
+The option --plotResults opens a gnuplot window with the Win/Draw/Lose count
