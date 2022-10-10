@@ -7,3 +7,6 @@
 [submodule "src/external/sciplot"]
 	path = src/external/sciplot
 	url = https://github.com/sciplot/sciplot
+[submodule "src/external/indicators"]
+	path = src/external/indicators
+	url = https://github.com/p-ranav/indicators.git

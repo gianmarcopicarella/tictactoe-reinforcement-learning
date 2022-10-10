@@ -8,7 +8,6 @@ namespace TTT
 {
     namespace Utils
     {
-
         namespace
         {
             void RecursiveBoardsGeneration(const Player anAgentPlayer, const Player aPlayerToMove, const uint32_t aCurrentBoard, std::set<uint32_t>& someOutValidBoards)
