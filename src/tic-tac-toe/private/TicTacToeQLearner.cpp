@@ -13,7 +13,11 @@ namespace TTT
             Base(anAgentId, aLearningSettings)
     {
         std::set<uint32_t> validBoardStates;
-        TTT::Utils::GenerateBoards(myId, validBoardStates);
+
+        const auto otherPlayer = static_cast<Player>((~static_cast<uint32_t>(myId)) & 0x3);
+        const auto startingPlayer = myLearningSettings.myIsAgentFirstToMove ? myId : otherPlayer;
+
+        TTT::Utils::GenerateBoards(myId, startingPlayer, validBoardStates);
 
         for (auto boardState : validBoardStates)
         {

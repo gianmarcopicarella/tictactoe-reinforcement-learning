@@ -27,7 +27,7 @@ BoardStatus GetBoardStatus(const Player aMovingPlayer, const uint32_t aBoard);
 
 std::vector<uint32_t> GenerateMoves(const Player aPlayerToMove, const uint32_t aCurrentBoard);
 
-void GenerateBoards(const Player anAgentPlayer, std::set<uint32_t>& someOutValidBoards);
+void GenerateBoards(const Player anAgentPlayer, const Player aStartingPlayer, std::set<uint32_t>& someOutValidBoards);
 
 template <typename LearningSettings>
 void Simulate(RL::LearningPolicy<TTT::Player, uint32_t, uint32_t, LearningSettings, TTT::BoardStatus>& aLearningAgent,

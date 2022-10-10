@@ -4,8 +4,10 @@
 
 #include "GameUtils.h"
 
-namespace TTT {
-    namespace Utils {
+namespace TTT
+{
+    namespace Utils
+    {
 
         namespace
         {
@@ -28,7 +30,6 @@ namespace TTT {
                 }
             }
         }
-
 
         std::string BoardToString(const uint32_t aBoard)
         {
@@ -167,11 +168,11 @@ namespace TTT {
             return moves;
         }
 
-        void GenerateBoards(const Player anAgentPlayer, std::set<uint32_t>& someOutValidBoards)
+        void GenerateBoards(const Player anAgentPlayer, const Player aStartingPlayer, std::set<uint32_t>& someOutValidBoards)
         {
             constexpr auto startingBoard = 0x00000000;
 
-            RecursiveBoardsGeneration(anAgentPlayer, Player::Cross, startingBoard, someOutValidBoards);
+            RecursiveBoardsGeneration(anAgentPlayer, aStartingPlayer, startingBoard, someOutValidBoards);
 
             // Check that the total number of legal boards is correct
             std::set<uint32_t> fullBoardsSpace;

@@ -14,7 +14,7 @@ file(   GLOB_RECURSE
 
 add_library(TTT STATIC ${TTT_HDR} ${TTT_IMPL})
 
-target_link_libraries(TTT PRIVATE RL)
+target_link_libraries(TTT PUBLIC RL)
 
 target_include_directories(TTT PUBLIC ${TTT_PUBLIC_PATH})
 target_include_directories(TTT PRIVATE ${TTT_PRIVATE_PATH})
