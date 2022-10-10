@@ -15,7 +15,7 @@ namespace TTT
         std::set<uint32_t> validBoardStates;
 
         const auto otherPlayer = static_cast<Player>((~static_cast<uint32_t>(myId)) & 0x3);
-        const auto startingPlayer = myLearningSettings.myIsAgentFirstToMove ? myId : otherPlayer;
+        const auto startingPlayer = myLearningSettings.myIsAgentDelayed ? otherPlayer : myId;
 
         TTT::Utils::GenerateBoards(myId, startingPlayer, validBoardStates);
 

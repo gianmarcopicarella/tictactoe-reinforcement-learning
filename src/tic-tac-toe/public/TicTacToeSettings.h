@@ -12,12 +12,12 @@ namespace TTT
 template<typename ActionStatus>
 struct TicTacToeSettings : public RL::QLearningSettings<ActionStatus>
     {
-        bool myIsAgentFirstToMove { true };
+        bool myIsAgentDelayed { false };
 
         template<class Archive>
         void serialize(Archive & archive)
         {
-            archive(cereal::base_class<RL::QLearningSettings<ActionStatus>>(this), CEREAL_NVP(myIsAgentFirstToMove));
+            archive(cereal::base_class<RL::QLearningSettings<ActionStatus>>(this), CEREAL_NVP(myIsAgentDelayed));
         }
     };
 }

@@ -23,7 +23,7 @@ class EpsilonOptimalOpponent : public RL::Agent<Player, uint32_t, uint32_t>
 
     private:
         float myRandomEpsilon;
-        int TicTacToeMinimax(const uint32_t aBoard, const Player aPlayer);
+        int TicTacToeMinimax(const uint32_t aBoard, const Player aPlayer,  int anAlpha, int aBeta);
     };
 
 }

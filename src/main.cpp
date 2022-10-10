@@ -20,28 +20,42 @@
 #include <cereal/archives/json.hpp>
 
 #include <indicators/cursor_control.hpp>
-#include <indicators/progress_spinner.hpp>
+#include <indicators/block_progress_bar.hpp>
 
 #include <matplot/matplot.h>
 
-void PlotCumulativeGameResults(const std::unordered_map<TTT::BoardStatus, int>& someResultsCount)
+void PlotData(const std::unordered_map<TTT::BoardStatus, int>& someResultsCount, const std::vector<float>& someCumulativeRewards)
 {
     using namespace matplot;
-    bar(std::vector<int> {
+
+    tiledlayout(2, 1);
+
+    gcf()->width(800);
+    gcf()->height(800);
+    gcf()->reactive_mode();
+
+    auto top = nexttile();
+
+    bar(top, std::vector {
             someResultsCount.find(TTT::BoardStatus::Win)->second,
             someResultsCount.find(TTT::BoardStatus::Draw)->second,
-            someResultsCount.find(TTT::BoardStatus::Lose)->second});
+            someResultsCount.find(TTT::BoardStatus::Lose)->second });
 
-    gca()->x_axis().ticklabels({"Wins", "Draws", "Loses"});
-    gca()->y_axis().label("N. Episodes");
-    show();
-}
+    top->title("Episodes' results");
+    top->x_axis().ticklabels({"Wins", "Draws", "Loses"});
+    top->y_axis().label("N. Episodes");
 
-void PlotCumulativeRewardFunction(const std::vector<float>& someCumulativeRewards, int anEpisodesCount)
-{
-    using namespace matplot;
-    std::vector<double> x = linspace(0, anEpisodesCount, someCumulativeRewards.size());
-    plot(x, someCumulativeRewards);
+    auto bottom = nexttile();
+
+    auto crfPlot = plot(bottom, someCumulativeRewards);
+
+    bottom->title("Cumulative Reward Function");
+    bottom->x_axis().ticklabels({"N. Episodes"});
+    bottom->y_axis().label("Cumulative Reward");
+
+    crfPlot->line_width(1.f);
+
+
     show();
 }
 
@@ -51,7 +65,6 @@ int main(int argc, char **argv)
     show_console_cursor(false);
 
     CLI::App cli;
-    cli.require_subcommand(1);
 
     TTT::TicTacToeSettings<TTT::BoardStatus> agentSettings;
 
@@ -68,94 +81,58 @@ int main(int argc, char **argv)
 
     auto iterationsCount = 50000;
 
-    // Train subcommand
-    auto train = cli.add_subcommand("train", "Train a policy using QLearning");
+    // Train
+    auto trainingOption = cli.add_flag("-t", agentSettings.myIsTraining, "Train a new agent");
+    cli.add_option("-i", iterationsCount, "Number of iterations");
 
-    // Iterations parameter
-    train->add_option("-i", iterationsCount, "Number of iterations");
-
-    // Rewards parameter
     std::vector<float> rewards;
-    auto rewardsParam = train->add_option("--rewards", rewards, "Reward values (Win, Draw, Lose, Intermediate)");
-    rewardsParam->expected(4);
+    auto rewardsOption = cli.add_option("-r", rewards, "Reward values (Win, Draw, Lose, Intermediate)");
 
-    // Training parameters
-    auto gammaParam = train->add_option("-g", agentSettings.myGamma, "Gamma");
-    auto epsilonParam = train->add_option("-e", agentSettings.myRandomEpsilon, "Epsilon");
-    auto epsilonDecayParam = train->add_option("-d", agentSettings.myRandomEpsilonDecay, "Epsilon decay");
-    auto learningRateParam = train->add_option("-r", agentSettings.myLearningRate, "Learning rate");
+    rewardsOption->expected(4);
+    rewardsOption->needs(trainingOption);
 
-    gammaParam->check(CLI::Range(0.f,1.f));
-    epsilonParam->check(CLI::Range(0.f,1.f));
-    epsilonDecayParam->check(CLI::Range(0.f,1.f));
-    learningRateParam->check(CLI::Range(0.f,1.f));
+    std::vector<float> learningSettings;
+    auto learningSettingsOption = cli.add_option("-l", learningSettings, "Learning settings (Gamma, Epsilon, EpsilonDecay, LearningRate)");
 
-    // Plotting flags
-    auto rewardPlot { false };
-    train->add_flag("--plotReward", rewardPlot, "Plot cumulative reward");
+    learningSettingsOption->expected(4);
+    learningSettingsOption->check(CLI::Range(0.f,1.f));
+    learningSettingsOption->needs(trainingOption);
 
-    auto resultsPlot{ false };
-    train->add_flag("--plotResults", resultsPlot, "Plot game results");
-
-    // Gameplay flags
     auto isAgentNought { false };
-    train->add_flag("--nought", isAgentNought, "Agent side is nought");
+    auto shouldPlot { false };
 
-    auto isAgentDelayed { false };
-    train->add_flag("--delay", isAgentDelayed, "Delay first agent move");
+    auto agentSideOption = cli.add_flag("--nought", isAgentNought, "Agent side is nought");
+    auto agentDelayOption = cli.add_flag("--delay", agentSettings.myIsAgentDelayed, "Delay first agent move");
 
-    agentSettings.myIsAgentFirstToMove = !isAgentDelayed;
+    cli.add_flag("--plot", shouldPlot, "Plot cumulative reward and episodes' results");
 
-    // Serialization path
-    std::string savePath;
-    auto savePathParam = train->add_option("--save", savePath, "Trained policy save path");
+    agentSideOption->needs(trainingOption);
+    agentDelayOption->needs(trainingOption);
 
-    savePathParam->required();
+    std::string agentPath;
+    auto agentPathOption = cli.add_option("--path", agentPath, "Agent save/load path");
 
-    // Training agent parameter
+    agentPathOption->required();
+
     auto epsilonValue { 0.0f };
-    auto epsilonOptimalParam = train->add_option("--optimal", epsilonValue, "Select epsilon-optimal opponent (Default equals to random)");
+    auto epsilonOptimalParam = cli.add_option("--optimal", epsilonValue, "Select epsilon-optimal opponent (Default equals to random)");
 
     epsilonOptimalParam->check(CLI::Range(0.f,1.f));
 
-    // Test subcommand
-    auto test = cli.add_subcommand("test", "Test a trained policy against an opponent");
+    BlockProgressBar cliProgressBar {
+            option::BarWidth{80},
+            option::Start{"["},
+            option::End{"]"},
+            option::ForegroundColor{Color::white},
+            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
+    };
 
-    // Plotting flag
-    auto testResultsPlot { false };
-    test->add_option("--resultsPlot", testResultsPlot, "Set results plot save path");
-
-    // Iterations parameter
-    test->add_option("-i", iterationsCount, "Number of iterations");
-
-    // Deserialization path parameter
-    std::string loadPath;
-    auto loadPathParam = test->add_option("--load", loadPath, "Trained policy path");
-
-    loadPathParam->required();
-    loadPathParam->check(CLI::ExistingFile);
-
-    // Opponent parameter
-    auto isEpsilonOptimalOpponent { false };
-    test->add_flag("--optimal", isEpsilonOptimalOpponent, "Select optimal opponent (Default equals to random)");
-
-    train->callback([&]() {
-        if(!rewardsParam->empty())
-        {
-            agentSettings.myStaticScores[TTT::BoardStatus::Win] = rewards[0];
-            agentSettings.myStaticScores[TTT::BoardStatus::Draw] = rewards[1];
-            agentSettings.myStaticScores[TTT::BoardStatus::Lose] = rewards[2];
-            agentSettings.myStaticScores[TTT::BoardStatus::Intermediate] = rewards[3];
-        }
-
-        const auto agentSide = isAgentNought ? TTT::Player::Nought : TTT::Player::Cross;
+    cli.callback([&]() {
         const auto opponentSide = isAgentNought ? TTT::Player::Cross : TTT::Player::Nought;
+        const auto agentSide = isAgentNought ? TTT::Player::Nought : TTT::Player::Cross;
 
-        agentSettings.myIsTraining = true;
-
-        TTT::TicTacToeQLearner learningAgent{ agentSide, agentSettings };
-
-        RL::Agent<TTT::Player, uint32_t, uint32_t> * opponentPtr;
+        TTT::TicTacToeQLearner* agentPtr;
+        RL::Agent<TTT::Player, uint32_t, uint32_t>* opponentPtr;
 
         if(epsilonOptimalParam->empty())
         {
@@ -166,157 +143,98 @@ int main(int argc, char **argv)
             opponentPtr = new TTT::EpsilonOptimalOpponent{opponentSide, epsilonValue};
         }
 
-        std::unordered_map<TTT::BoardStatus, int> resultsCounter;
-        std::vector<float> cumulativeRewards;
-
-        if(rewardPlot)
+        if(agentSettings.myIsTraining)
         {
-            cumulativeRewards.reserve(iterationsCount+1);
-            cumulativeRewards.emplace_back(0.f);
-        }
+            cliProgressBar.set_option(option::PostfixText{"Training agent"});
 
-        if(resultsPlot)
-        {
-            resultsCounter.insert(std::make_pair(TTT::BoardStatus::Win, 0));
-            resultsCounter.insert(std::make_pair(TTT::BoardStatus::Draw, 0));
-            resultsCounter.insert(std::make_pair(TTT::BoardStatus::Lose, 0));
-        }
-
-        indicators::ProgressSpinner spinner{
-                option::PostfixText{"Training agent"},
-                option::ForegroundColor{Color::yellow},
-                option::SpinnerStates{std::vector<std::string>{"⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁"}},
-                option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
-        };
-
-        const auto episodeCallback = [&](const std::vector<uint32_t>& aGameplayHistory, int anEpisodeIndex){
-            if(rewardPlot)
+            if(!rewards.empty())
             {
-                const auto boardStatus = TTT::Utils::GetBoardStatus(learningAgent.GetAgentId(), aGameplayHistory.back());
-                const auto reward = learningAgent.GetLearningSettings().myStaticScores.find(boardStatus)->second;
-
-                cumulativeRewards.emplace_back(cumulativeRewards.back() + reward);
-            }
-            if(resultsPlot)
-            {
-                const auto boardStatus = TTT::Utils::GetBoardStatus(learningAgent.GetAgentId(), aGameplayHistory.back());
-                ++resultsCounter[boardStatus];
+                agentSettings.myStaticScores[TTT::BoardStatus::Win] = rewards[0];
+                agentSettings.myStaticScores[TTT::BoardStatus::Draw] = rewards[1];
+                agentSettings.myStaticScores[TTT::BoardStatus::Lose] = rewards[2];
+                agentSettings.myStaticScores[TTT::BoardStatus::Intermediate] = rewards[3];
             }
 
-            spinner.set_progress(100*(anEpisodeIndex+1)/static_cast<float>(iterationsCount));
-        };
-
-        TTT::Utils::Simulate(
-                static_cast<TTT::TicTacToeQLearner::Base::Base&>(learningAgent),
-                *opponentPtr,
-                iterationsCount,
-                learningAgent.GetLearningSettings().myIsAgentFirstToMove,
-                episodeCallback);
-
-        learningAgent.SetTrainingMode(false);
-
-        std::ofstream os(savePath);
-        assert(os.is_open() && "Cannot open use the serialization path");
-
-        {
-            cereal::JSONOutputArchive archive(os);
-            archive(CEREAL_NVP(learningAgent));
-        }
-
-        os.close();
-
-        spinner.set_option(option::ForegroundColor{Color::green});
-        spinner.set_option(option::PrefixText{"✔"});
-        spinner.set_option(option::ShowSpinner{false});
-        spinner.set_option(option::ShowPercentage{false});
-        spinner.set_option(option::PostfixText{"Agent trained and saved successfully!"});
-        spinner.mark_as_completed();
-
-        indicators::show_console_cursor(true);
-
-        if(rewardPlot)
-        {
-            PlotCumulativeRewardFunction(cumulativeRewards, iterationsCount);
-        }
-
-        if(resultsPlot)
-        {
-            PlotCumulativeGameResults(resultsCounter);
-        }
-    });
-
-    test->callback([&]() {
-        std::ifstream os(loadPath);
-        assert(os.is_open() && "Cannot open use the deserialization path");
-
-        cereal::JSONInputArchive archive(os);
-        TTT::TicTacToeQLearner trainedAgent;
-
-        archive(trainedAgent);
-        os.close();
-
-        trainedAgent.SetTrainingMode(false);
-
-        RL::Agent<TTT::Player, uint32_t, uint32_t> * opponentPtr;
-
-        const auto opponentSide = trainedAgent.GetAgentId() == TTT::Player::Cross ? TTT::Player::Nought : TTT::Player::Cross;
-
-        if(isEpsilonOptimalOpponent)
-        {
-            opponentPtr = new TTT::EpsilonOptimalOpponent{opponentSide, epsilonValue};
+            agentPtr = new TTT::TicTacToeQLearner { agentSide, agentSettings };
         }
         else
         {
-            opponentPtr = new TTT::RandomOpponent{opponentSide};
+            cliProgressBar.set_option(option::PostfixText{"Testing agent"});
+
+            std::ifstream deserializePath(agentPath);
+            assert(deserializePath.is_open() && "Failed to open the deserialization stream");
+
+            {
+                cereal::JSONInputArchive jsonArchive(deserializePath);
+                agentPtr = new TTT::TicTacToeQLearner{};
+                jsonArchive(*agentPtr);
+            }
+
+            deserializePath.close();
+
+            agentPtr->SetTrainingMode(false);
         }
 
         std::unordered_map<TTT::BoardStatus, int> resultsCounter;
+        std::vector<float> cumulativeRewards;
 
-        if(testResultsPlot)
+        const auto episodeCallback = [&](const std::vector<uint32_t>& aGameplayHistory, int anEpisodeIndex){
+            if(shouldPlot)
+            {
+                const auto boardStatus = TTT::Utils::GetBoardStatus(agentPtr->GetAgentId(), aGameplayHistory.back());
+                const auto reward = agentPtr->GetLearningSettings().myStaticScores.find(boardStatus)->second;
+
+                cumulativeRewards.emplace_back(cumulativeRewards.back() + reward);
+                ++resultsCounter[boardStatus];
+            }
+            cliProgressBar.set_progress(100*(anEpisodeIndex+1)/static_cast<float>(iterationsCount));
+        };
+
+        if(shouldPlot)
         {
+            cumulativeRewards.reserve(iterationsCount+1);
+            cumulativeRewards.emplace_back(0.f);
+
             resultsCounter.insert(std::make_pair(TTT::BoardStatus::Win, 0));
             resultsCounter.insert(std::make_pair(TTT::BoardStatus::Draw, 0));
             resultsCounter.insert(std::make_pair(TTT::BoardStatus::Lose, 0));
         }
 
-        indicators::ProgressSpinner spinner {
-                option::PostfixText{"Testing agent"},
-                option::ForegroundColor{Color::yellow},
-                option::SpinnerStates{std::vector<std::string>{"⠈", "⠐", "⠠", "⢀", "⡀", "⠄", "⠂", "⠁"}},
-                option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
-        };
-
-        const auto episodeCallback = [&](const std::vector<uint32_t>& aGameplayHistory, int anEpisodeIndex){
-            if(testResultsPlot)
-            {
-                const auto boardStatus = TTT::Utils::GetBoardStatus(trainedAgent.GetAgentId(), aGameplayHistory.back());
-                ++resultsCounter[boardStatus];
-            }
-
-            spinner.set_progress(100*(anEpisodeIndex+1)/static_cast<float>(iterationsCount));
-        };
-
         TTT::Utils::Simulate(
-                static_cast<TTT::TicTacToeQLearner::Base::Base&>(trainedAgent),
+                static_cast<TTT::TicTacToeQLearner::Base::Base&>(*agentPtr),
                 *opponentPtr,
                 iterationsCount,
-                trainedAgent.GetLearningSettings().myIsAgentFirstToMove,
+                !agentPtr->GetLearningSettings().myIsAgentDelayed,
                 episodeCallback);
 
-        spinner.set_option(option::ForegroundColor{Color::green});
-        spinner.set_option(option::PrefixText{"✔"});
-        spinner.set_option(option::ShowSpinner{false});
-        spinner.set_option(option::ShowPercentage{false});
-        spinner.set_option(option::PostfixText{"Agent tested successfully!"});
-        spinner.mark_as_completed();
+        cliProgressBar.set_option(option::PostfixText {"Done ✔"});
+        cliProgressBar.mark_as_completed();
 
-        indicators::show_console_cursor(true);
-
-        if(testResultsPlot)
+        if(shouldPlot)
         {
-            PlotCumulativeGameResults(resultsCounter);
+            PlotData(resultsCounter, cumulativeRewards);
         }
+
+        if(agentSettings.myIsTraining)
+        {
+            std::ofstream serializeStream(agentPath);
+            assert(serializeStream.is_open() && "Failed to open the serialization stream");
+
+            {
+                cereal::JSONOutputArchive archive(serializeStream);
+                archive(CEREAL_NVP(*agentPtr));
+            }
+
+            serializeStream.close();
+        }
+
+        assert(agentPtr != nullptr && opponentPtr != nullptr && "Agent or Opponent pointers cannot be nullptr");
+
+        delete agentPtr;
+        delete opponentPtr;
+
     });
 
     CLI11_PARSE(cli, argc, argv);
+    indicators::show_console_cursor(true);
 }

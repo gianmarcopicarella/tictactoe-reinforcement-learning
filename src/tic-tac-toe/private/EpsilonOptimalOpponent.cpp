@@ -37,7 +37,8 @@ namespace TTT
 
             for (const auto nextMove : nextMoves)
             {
-                nextMovesScores.emplace_back(TicTacToeMinimax(nextMove, nextPlayer), nextMove);
+                const auto moveValue = TicTacToeMinimax(nextMove, nextPlayer, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+                nextMovesScores.emplace_back(moveValue, nextMove);
             }
 
             std::sort(nextMovesScores.begin(), nextMovesScores.end(), std::greater<>());
@@ -52,7 +53,7 @@ namespace TTT
         }
     }
 
-    int EpsilonOptimalOpponent::TicTacToeMinimax(const uint32_t aBoard, const Player aPlayer)
+    int EpsilonOptimalOpponent::TicTacToeMinimax(const uint32_t aBoard, const Player aPlayer, int anAlpha, int aBeta)
     {
         switch (TTT::Utils::GetBoardStatus(myId, aBoard))
         {
@@ -70,7 +71,13 @@ namespace TTT
 
             for (const auto nextMove : TTT::Utils::GenerateMoves(aPlayer, aBoard))
             {
-                value = std::max(value, TicTacToeMinimax(nextMove, nextPlayer));
+                value = std::max(value, TicTacToeMinimax(nextMove, nextPlayer, anAlpha, aBeta));
+
+                if(value >= aBeta)
+                {
+                    break;
+                }
+                anAlpha = std::max(anAlpha, value);
             }
 
             return value;
@@ -81,7 +88,13 @@ namespace TTT
 
             for (const auto nextMove : TTT::Utils::GenerateMoves(aPlayer, aBoard))
             {
-                value = std::min(value, TicTacToeMinimax(nextMove, nextPlayer));
+                value = std::min(value, TicTacToeMinimax(nextMove, nextPlayer, anAlpha, aBeta));
+
+                if(value <= anAlpha)
+                {
+                    break;
+                }
+                aBeta = std::min(aBeta, value);
             }
 
             return value;
