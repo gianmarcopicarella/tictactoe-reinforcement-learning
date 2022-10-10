@@ -19,7 +19,7 @@ $ cmake -S src -B build
 $ cd build
 $ make
 ```
-At this point, calling ```$ ./tictactoe-rl train --help``` should print all the available parameteres.
+At this point, calling ```$ ./tictactoe-rl --help``` should print all the available parameters.
 
 ## Running the application (CLI)
 ### Default settings
@@ -37,35 +37,30 @@ At this point, calling ```$ ./tictactoe-rl train --help``` should print all the 
 ```
 
 ### Train and serialize an agent
-When training an agent, ```--save``` is the only mandatory parameter. It specifies where the trained agent should be serialized once the training is completed. 
+When training an agent, ```--path``` is the only mandatory parameter. It specifies where the trained agent should be serialized once the training is completed. 
 ```
-$ ./tictactoe-rl train --save ./policy.json
+$ ./tictactoe-rl -t --path ./policy.json
 ```
 The trainer selected is random by default. Use ```--optimal eps``` if you want to use an optimal opponent with epsilon = eps.
 ```
-$ ./tictactoe-rl train --optimal 0.2 --save ./policy.json
+$ ./tictactoe-rl -t --optimal 0.2 --path ./policy.json
 ```
 
 ### Deserialize and test an agent
-Similar to the training phase, ```--load``` is the only mandatory parameter. It specifies from where the trained agent should be deserialized.
+In the same way as the training phase, ```--path``` is the only mandatory parameter. It specifies from where the trained agent should be deserialized.
 ```  
-tictactoe-rl test --load ./policy.json
+tictactoe-rl --path ./policy.json
 ```
-The trainer selected is random by default. Use ```--optimal``` if you want to use an optimal opponent with epsilon = 0.
+The opponent selected is random by default. Use ```--optimal eps``` if you want to use an optimal opponent with epsilon = eps - eps should be always set to 0 during testing.
 ```
-tictactoe-rl test --optimal --load ./policy.json
+tictactoe-rl --optimal 0 --path ./policy.json
 ```
 
-### Plotting the cumulative reward function (CRF)
-The CRF plot can be requested only during training through the ```--plotReward``` flag.
-Once the training is completed, a GnuPlot window containing the CRF plot will pop-up.
+## Plotting episodes results (ER) and cumulative reward function (CRF)
+ER and CRF plots can be requested through the ```--plot``` flag.
+Once the training or testing is completed, a GnuPlot window containing the ER and CRF plots will pop-up.
 
-<img src="CRF.png" alt="CRF plot" width="400"/>
-
-### Plotting the cumulative episodes result (CER)
-The CER plot can be requested only during training through the ```--plotResults``` flag.
-Once the training is completed, a GnuPlot window containing the CER plot will pop-up.
-
+<img src="plot.png" alt="CRF plot" width="400"/>
 
 ## Contributing
 
