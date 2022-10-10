@@ -56,7 +56,7 @@ The opponent selected is random by default. Use ```--optimal eps``` if you want 
 tictactoe-rl --optimal 0 --path ./policy.json
 ```
 
-### Plotting episodes results (ER) and cumulative reward function (CRF)
+## Plotting episodes results (ER) and cumulative reward function (CRF)
 ER and CRF plots can be requested through the ```--plot``` flag.
 Once the training or testing is completed, a GnuPlot window containing the ER and CRF plots will pop-up.
 
