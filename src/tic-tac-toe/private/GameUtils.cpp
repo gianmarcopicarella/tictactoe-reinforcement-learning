@@ -174,6 +174,7 @@ namespace TTT
 
             RecursiveBoardsGeneration(anAgentPlayer, aStartingPlayer, startingBoard, someOutValidBoards);
 
+#ifdef DEBUG_FLAG
             // Check that the total number of legal boards is correct
             std::set<uint32_t> fullBoardsSpace;
 
@@ -192,6 +193,7 @@ namespace TTT
             });
 
             assert(endgamesCount == 958 && "The number of generated end game boards is not correct");
+#endif
         }
     }
 }

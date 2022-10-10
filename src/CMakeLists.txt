@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 enable_language(C CXX)
 
+# append custom preprocessor definition when using Debug targets
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_FLAG")
+
 # Required to break Boost dependency in Cereal
 set(SKIP_PERFORMANCE_COMPARISON ON)
 
