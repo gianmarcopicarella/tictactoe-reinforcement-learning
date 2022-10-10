@@ -60,7 +60,7 @@ tictactoe-rl test --optimal --load ./policy.json
 The CRF plot can be requested only during training through the ```--plotReward``` flag.
 Once the training is completed, a GnuPlot window containing the CRF plot will pop-up.
 
-![alt text](CRF.png =400x "CRF plot")
+<img src="CRF.png" alt="CRF plot" width="400"/>
 
 ### Plotting the cumulative episodes result (CER)
 The CER plot can be requested only during training through the ```--plotResults``` flag.
