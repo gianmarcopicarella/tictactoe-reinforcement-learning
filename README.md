@@ -19,6 +19,7 @@ $ cmake -S src -B build
 $ cd build
 $ make
 ```
+At this point, calling ```$ ./tictactoe-rl train --help``` should print all the available parameteres.
 
 ## Running the application (CLI)
 ### Train and serialize an agent
