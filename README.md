@@ -19,7 +19,7 @@ $ cmake -S src -B build
 $ cd build
 $ make
 ```
-At this point, calling ```$ ./tictactoe-rl train --help``` should print all the available parameteres.
+At this point, calling ```$ ./tictactoe-rl train --help``` should print all the available parameters.
 
 ## Running the application (CLI)
 ### Default settings
