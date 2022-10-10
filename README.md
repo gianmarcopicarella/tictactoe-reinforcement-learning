@@ -1,38 +1,40 @@
 # Reinforcement learning applied to Tic-Tac-Toe
-The following application applies at its most basic level some of the core concept of reinforcement learning in order to train a policy capable of playing the game of tic tac toe autonomously. I used the following project as a starting point to dive into the reinforcement learning field, I hope it will help others too.
+The following application applies at its most basic level some of the core concept of reinforcement learning in order to train a policy capable of playing the game of Tic-tac-toe autonomously. QLearning is the core learning algorithm employed in this project. Nonetheless it's fairly easy to implement new learning strategies and test them.
+
 ## Project structure
-I tried to keep separated the core reinforcement learning logic and the domain-specific logic concerning tic-tac-toe. In this way it should be easier to understand the code.
+The code separates what is core reinforcement learning code from Tic-tac-toe domain-specific code.
+The current RL class hierarchy makes it easy the addition of new agent or trainer types.
 
-The learning agent is based on an epsilon-greedy QLearning algorithm. The epsilon value represent the probability to select a random, or exploratory, move. Otherwise it selects all the maximum scored moves, if more than one, and randomly picks one among them.
+Currently there is one QLearning agent specialized for Tic-tac-toe in ```TicTacToeQLearner.h```. It accepts a QLearningSettings object containing all the training information needed by the learner.
 
-At the end of each game, or episode, the agent updates its policy iterating the gameplay history of moves so that the final reward is spreaded from leaf nodes towards the root. Repeating the following logic with the proper learning parameters many times guarantees that the estimated policy will eventually converge to the optimal one.
+There are two opponent types:
+1. Random: At each step, it selects a random move sampled using a uniform distribution.
+3. Epsilon-Optimal: At each step, it samples a number n between 0 and 1; if n < epsilon then it returns a random move, otherwise the optimal move is found using the minimax algorithm.
 
-The opponents available are two: random or epsilonOptimal
-A random opponent simply selects a random move everytime.
-An epsilonOptimal opponent selects a random move with probability epsilon and uses the minimax algorithm to find the best move all the other times.
-
-Why using an epsilon optimal opponent? Because in this way the agent is also capable of learning to win, otherwise we would have all draws even if playing against a random player.
-
-## Running the application
-### Training an agent
-Run the following command to train an agent and serialize it on disk
+## Running the application (CLI)
+### Training and save an agent
+When training an agent, ```--save``` is the only mandatory parameter. It specifies where the trained agent should be serialized once the training is completed. 
 ```
-tictactoe-rl train -i 20000 --save ./policy.json
+$ ./tictactoe-rl train --save ./policy.json
 ```
-by default the trainer is a random opponent. If you want to use an epsilon-optimal opponent with e=0.2 then use the following command
+The trainer selected is random by default. Use ```--optimal eps``` if you want to use an optimal opponent with epsilon = eps.
 ```
-tictactoe-rl train -i 20000 --save ./policy.json --optimal 0.2
+$ ./tictactoe-rl train --optimal 0.2 --save ./policy.json
 ```
-### Testing an agent
-Run the following command to test a trained agent
+
+### Loading and testing an agent
+Similar to the training phase, ```--load``` is the only mandatory parameter. It specifies from where the trained agent should be deserialized.
 ```  
-tictactoe-rl test -i 20000 --load ./policy.json
+tictactoe-rl test --load ./policy.json
 ```
-by default the opponent is a random player. If you want to use an optimal opponent then use the following command
+The trainer selected is random by default. Use ```--optimal``` if you want to use an optimal opponent with epsilon = 0.
 ```
-tictactoe-rl test -i 20000 --load ./policy.json --optimal
+tictactoe-rl test --optimal --load ./policy.json
 ```
-### Plotting cumulative reward function
-The option ```--plotReward``` opens a gnuplot window with the cumulative reward function value at each episode
-### Plotting Win/Draw/Lose count
-The option ```--plotResults``` opens a gnuplot window with the Win/Draw/Lose count
+
+### Plotting the cumulative reward function (CRF)
+The CRF plot can be requested only during training through the ```--plotReward``` flag.
+Once the training is completed, a GnuPlot window containing the CRF plot will pop-up.
+### Plotting the cumulative episodes result (CER)
+The CER plot can be requested only during training through the ```--plotResults``` flag.
+Once the training is completed, a GnuPlot window containing the CER plot will pop-up.
