@@ -49,11 +49,11 @@ $ ./tictactoe-rl -t --optimal 0.2 --path ./policy.json
 ### Deserialize and test an agent
 In the same way as the training phase, ```--path``` is the only mandatory parameter. It specifies from where the trained agent should be deserialized.
 ```  
-tictactoe-rl --path ./policy.json
+$ tictactoe-rl --path ./policy.json
 ```
 The opponent selected is random by default. Use ```--optimal eps``` if you want to use an optimal opponent with epsilon = eps - eps should be always set to 0 during testing.
 ```
-tictactoe-rl --optimal 0 --path ./policy.json
+$ tictactoe-rl --optimal 0 --path ./policy.json
 ```
 
 ## Plotting episodes results (ER) and cumulative reward function (CRF)
