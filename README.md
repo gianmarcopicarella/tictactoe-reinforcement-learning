@@ -73,4 +73,4 @@ Contributions are what make the open source community such an amazing place to b
 5. Open a Pull Request
 
 ## License
-Virgo is released under the under terms of the [MIT License](LICENSE).
+This repository is released under the under terms of the [MIT License](LICENSE).
